@@ -13,11 +13,11 @@
 // this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 // Copyright 2013 IronBlood, based on Auth_imap by Rusty Burchfield
- 
+
 // Add these two lines to the bottom of your LocalSettings.php
 // require_once('extensions/AuthYTHT/AuthYTHT.php');
 // $wgAuth = new AuthYTHT();
- 
+
 // The AuthYTHT class is an AuthPlugin so make sure we have this included.
 
 require_once('AuthPlugin.php');
@@ -58,7 +58,7 @@ class AuthYTHT extends AuthPlugin {
 	function updateExternalDB($user) {
 		return true;
 	}
- 
+
 	/**
 	 * We can't create external accounts so return false.
 	 *
@@ -68,21 +68,21 @@ class AuthYTHT extends AuthPlugin {
 	function canCreateAccounts() {
 		return false;
 	}
- 
+
 	/**
 	 * We don't support adding users to whatever service provides REMOTE_USER, so
 	 * fail by always returning false.
 	 *
-	 * @param $user User 
-	 * @param $password String: password 
+	 * @param $user User
+	 * @param $password String: password
 	 * @return bool
 	 * @public
 	 */
 	function addUser($user, $password) {
 		return false;
 	}
- 
- 
+
+
 	/**
 	 * Pretend all users exist.  This is checked by authenticateUserData to
 	 * determine if a user exists in our 'db'.  By returning true we tell it that
@@ -104,8 +104,49 @@ class AuthYTHT extends AuthPlugin {
 	 * @return bool
 	 * @public
 	 */
-	function authenticate($username, $password) {
-		// todo
+	function authenticate($username, $password) { // todo
+		// YTHT 的用户密码存放在 .PASSWDS 文件中
+		// 该文件每一段数据其实都是对应于 struct userec 结构
+		// 在当前 BMY 的代码中，struct userec 的大小为 452 字节，其中，
+		// userid 的长度为 14 字节，每一段中的偏移地址为 0
+		// passwd 的长度为 14 字节，每一段中的偏移地址为 46
+		// passwd 经过 DES 算法加密
+		$result = false;
+		// 依据实际路径修改
+		$PWPATH = "/home/bbs/.PASSWDS";
+
+		$PW = fopen($PWPATH, "r");
+
+		while(!flock($PW, LOCK_SH)) {
+			sleep(1);
+		}
+
+		$total_num = filesize($PWPATH) / 452;
+
+		for($i=0; $i<$total_num; $i++) {
+			fseek($PW, 452*$i);
+			$curr_userid = fgets($PW, 14);
+			$curr_userid = rtrim($curr_userid);
+
+			if($curr_userid == $username) {
+				fseek($PW, 33, SEEK_CUR);
+				$curr_passwd = fgetc($PW, 14);
+
+				$curr_salt = substr($curr_passwd, 0, 2);
+				$password_crypt = crypt($password, $curr_salt);
+
+				if($curr_passwd == $password_crypt) {
+					$result = true;
+				}
+
+				break;
+			}
+		}
+
+		flock($PW, LOCK_UN);
+		fclose($PW);
+
+		return $result;
 	}
 
 	/**
@@ -145,7 +186,7 @@ class AuthYTHT extends AuthPlugin {
 	function autoCreate() {
 		return true;
 	}
- 
+
 	/**
 	 * Return true to prevent logins that don't authenticate here from being
 	 * checked against the local database's password fields.
@@ -156,7 +197,7 @@ class AuthYTHT extends AuthPlugin {
 	function strict() {
 		return false;
 	}
- 
+
 	/**
 	 * When creating a user account, optionally fill in preferences and such.
 	 * For instance, you might pull the email address or real name from the
@@ -168,24 +209,24 @@ class AuthYTHT extends AuthPlugin {
 	function initUser(&$user) {
 		global $_SERVER;
 		$username = $_REQUEST['wpName'];
- 
+
 		// Using your own methods put the users real name here.
 		// $user->setRealName('');
 		// Using your own methods put the users email here.
 		// $user->setEmail("$username@$maildomain");
- 
+
 		// $user->mEmailAuthenticated = wfTimestampNow();
 		// $user->setToken();
- 
+
 		//turn on e-mail notifications by default
 		// $user->setOption('enotifwatchlistpages', 1);
 		// $user->setOption('enotifusertalkpages', 1);
 		// $user->setOption('enotifminoredits', 1);
 		// $user->setOption('enotifrevealaddr', 1);
- 
+
 		$user->saveSettings();
 	}
- 
+
 	/**
 	 * Modify options in the login template. This shouldn't be very important
 	 * because no one should really be bothering with the login page.
@@ -200,7 +241,7 @@ class AuthYTHT extends AuthPlugin {
 		$template->set('domain', false);
 		$template->set('usedomain', false);
 	}
- 
+
 	/**
 	 * Normalize user names to the mediawiki standard to prevent duplicate
 	 * accounts.
