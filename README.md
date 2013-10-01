@@ -17,6 +17,7 @@ git clone https://github.com/bmybbs/AuthYTHT.git
 修改 MediaWiki 的 `LocalSettings.php` 文件，并在文件结尾加上如下两行：
 
 ```php
+require_once('includes/AuthPlugin.php');
 require_once('extensions/AuthYTHT/AuthYTHT.php');
 $wgAuth = new AuthYTHT();
 ```

@@ -14,13 +14,12 @@
 //
 // Copyright 2013 IronBlood, based on Auth_imap by Rusty Burchfield
 
-// Add these two lines to the bottom of your LocalSettings.php
+// Add these three lines to the bottom of your LocalSettings.php
+// require_once('includes/AuthPlugin.php');
 // require_once('extensions/AuthYTHT/AuthYTHT.php');
 // $wgAuth = new AuthYTHT();
 
 // The AuthYTHT class is an AuthPlugin so make sure we have this included.
-
-require_once('AuthPlugin.php');
 
 class AuthYTHT extends AuthPlugin {
 
