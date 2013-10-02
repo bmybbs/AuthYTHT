@@ -21,6 +21,22 @@
 
 // The AuthYTHT class is an AuthPlugin so make sure we have this included.
 
+$wgYTHTDebug = 0;
+
+define( "AUTHYTHTVERSION", "0.0.1" );
+
+/**
+ * Add extension information to Special:Version
+ */
+$wgExtensionCredits['other'][] = array(
+	'path' => __FILE__,
+	'name' => 'YTHT Authentication Plugin',
+	'version' => AUTHYTHTVERSION,
+	'author' => 'IronBlood',
+	'descriptionmsg' => '支持YTHT类型的bbs身份验证',
+	'url' => 'https://github.com/bmybbs/AuthYTHT',
+);
+
 class AuthYTHT extends AuthPlugin {
 
 	function AuthYTHT() {
